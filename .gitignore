@@ -1,0 +1,12 @@
+# Ignore env files
+.env
+
+# Python junk
+__pycache__/
+*.pyc
+
+# VSCode
+.vscode/
+
+# Virtual env
+.venv/

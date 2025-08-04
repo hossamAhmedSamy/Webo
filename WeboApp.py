@@ -6,13 +6,13 @@ from urllib.parse import urljoin
 genai.configure(api_key="AIzaSyDgORyXsBcfO5Y8QYZZ2rYmaKQ0JA6n6Bw")
 gemini_model = genai.GenerativeModel("gemini-2.0-flash")
 
-def summarize_with_gemini(content: str, example_summary: str) -> str:
+def summarize_with_gemini(content: str, CourseStructure: str) -> str:
     prompt = f"""You are a helpful assistant. I will give you raw content from a Microsoft Learn training module.
 Summarize it using the same format as the example below.
 
 ---
 Example Summary:
-{example_summary}
+{CourseStructure}
 
 ---
 Module Content:
@@ -79,14 +79,14 @@ def scrape_module_content(url, headless=True):
             content = str(e)
         browser.close()
     return title, content
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     course_url = "https://learn.microsoft.com/en-us/training/courses/mb-910t00"
     output_path = "test_output.txt"
     summary_path = "test_summary.txt"
 
     # Load example summary format from file
     with open("CourseStructure.txt", "r", encoding="utf-8") as f:
-        example_summary = f.read()
+        CourseStructure = f.read()
 
     print("[TEST] Extracting first learning path...")
     learning_paths = get_learning_paths(course_url, headless=True)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     title, content = scrape_module_content(first_module["url"], headless=True)
 
     print("[TEST] Summarizing with Gemini...")
-    summary = summarize_with_gemini(content, example_summary)
+    summary = summarize_with_gemini(content, CourseStructure)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(f"Title: {title}\n\nContent:\n{content}\n")
@@ -120,15 +120,15 @@ if __name__ == "__main__":
 
     print(f"\n✅ Test finished.\nRaw content → {output_path}\nSummary → {summary_path}")
 
-
-'''if __name__ == "__main__":
+"""
+if __name__ == "__main__":
     course_url = "https://learn.microsoft.com/en-us/training/courses/mb-910t00"
     output_path = "output.txt"
     summary_path = "summaries.txt"
 
     # Load example summary format from file
-    with open("example_summary.txt", "r", encoding="utf-8") as f:
-        example_summary = f.read()
+    with open("CourseStructure.txt", "r", encoding="utf-8") as f:
+        CourseStructure = f.read()
 
     print("[STEP 1] Extracting learning paths...")
     learning_paths = get_learning_paths(course_url, headless=True)
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
                 # STEP 4: Summarize and write to summaries.txt
                 print(f"[STEP 4] Summarizing Module {j}: {mod['title']}")
-                summary = summarize_with_gemini(content, example_summary)
+                summary = summarize_with_gemini(content, CourseStructure)
                 with open(summary_path, "a", encoding="utf-8") as summary_file:
                     summary_file.write(f"=== Summary for Module {j}: {mod['title']} ===\n")
                     summary_file.write(f"URL: {mod['url']}\n\n")
@@ -161,4 +161,4 @@ if __name__ == "__main__":
 
     print(f"\n[INFO] All scraping and summarization done.")
     print(f"[INFO] Raw content saved to: {output_path}")
-    print(f"[INFO] Summaries saved to: {summary_path}")'''
+    print(f"[INFO] Summaries saved to: {summary_path}")
