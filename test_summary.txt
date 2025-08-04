@@ -1,0 +1,21 @@
+Summary for: Introduction
+==== Learning Path 1: Explore the core capabilities of Microsoft Dynamics 365 customer engagement apps ===
+URL: https://learn.microsoft.com/en-us/training/paths/examine-core-capabilities-of-microsoft-dynamics-365-customer-engagement-apps/
+
+Found 19 modules in this path.
+
+--- Module 1: Introduction ---
+URL: https://learn.microsoft.com/en-us/training/modules/navigate-dynamics-customer-engagement-apps/1-introduction/?ns-enrollment-type=learningpath&ns-enrollment-id=learn.wwl.examine-core-capabilities-of-microsoft-dynamics-365-crm
+Title: Introduction
+
+Content:
+This module introduces Dynamics 365 customer engagement apps, which are client-driven business applications built on the Power Platform. It explains features common to all individual Dynamics 365 customer engagement apps.
+
+Objectives:
+*   Describe use cases for Dynamics 365.
+*   Describe how the Microsoft Power Platform relates to Dynamics 365 apps.
+*   Explain Microsoft Dataverse and its use.
+*   Examine the different Dynamics 365 customer engagement apps.
+*   Review options for accessing applications.
+*   Describe capabilities of Copilot in the Dynamics 365 customer engagement apps.
+

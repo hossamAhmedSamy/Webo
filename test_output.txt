@@ -1,0 +1,30 @@
+Title: Introduction
+
+Content:
+Ask Learn
+Introduction
+2 minutes
+
+Dynamics 365’s customer engagement applications are client-driven business applications built on the Power Platform. They're designed to help organizations more effectively engage their customers. The sales and customer insights applications help identify sales prospects and turn them into long-lasting relationships. Our service focused applications help your organization service your customers, whether you have a call center, service center, or are providing service in the field. Dynamics 365 customer engagement apps ensure that you have the tools necessary to fully engage your customers across all aspects of your business.
+
+In this module, we introduce the Dynamics 365 customer engagement apps and explain the features that are common to all the individual Dynamics 365 customer engagement apps.
+
+Objectives
+
+After completing this module, you'll be able to:
+
+Describe use cases for Dynamics 365.
+Describe how the Microsoft Power Platform relates to Dynamics 365 apps.
+Explain Microsoft Dataverse and its use.
+Examine the different Dynamics 365 customer engagement apps.
+Review options for accessing applications.
+Describe capabilities of Copilot in the Dynamics 365 customer engagement apps.
+
+Now let's dive in.
+
+Feedback
+
+Was this page helpful?
+
+Yes
+No
