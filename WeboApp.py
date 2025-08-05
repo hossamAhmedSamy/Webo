@@ -1,6 +1,12 @@
+from flask import Flask, jsonify, request
 import google.generativeai as genai
 from playwright.sync_api import sync_playwright
 from urllib.parse import urljoin
+import os
+import json
+import re
+
+app = Flask(__name__)
 
 # Configure Gemini
 genai.configure(api_key="AIzaSyDgORyXsBcfO5Y8QYZZ2rYmaKQ0JA6n6Bw")
@@ -79,86 +85,183 @@ def scrape_module_content(url, headless=True):
             content = str(e)
         browser.close()
     return title, content
-"""if __name__ == "__main__":
-    course_url = "https://learn.microsoft.com/en-us/training/courses/mb-910t00"
-    output_path = "test_output.txt"
-    summary_path = "test_summary.txt"
 
-    # Load example summary format from file
-    with open("CourseStructure.txt", "r", encoding="utf-8") as f:
-        CourseStructure = f.read()
+def parse_summaries_file(file_path):
+    """Parse the summaries.txt file and return structured JSON data"""
+    if not os.path.exists(file_path):
+        return {"error": "summaries.txt file not found"}
+    
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        
+        # Split content by module separators
+        modules = re.split(r'=+ Summary for Module \d+:', content)
+        modules = [m.strip() for m in modules if m.strip()]
+        
+        summaries_data = {
+            "total_modules": len(modules),
+            "modules": []
+        }
+        
+        for i, module_content in enumerate(modules, 1):
+            lines = module_content.split('\n')
+            title = ""
+            url = ""
+            summary = ""
+            
+            # Extract title from first line if it contains "==="
+            if lines and "===" in lines[0]:
+                title = lines[0].replace("===", "").strip()
+            
+            # Extract URL
+            for line in lines:
+                if line.startswith("URL:"):
+                    url = line.replace("URL:", "").strip()
+                    break
+            
+            # Extract summary (everything after URL line)
+            url_found = False
+            summary_lines = []
+            for line in lines:
+                if url_found and line.strip() and not line.startswith("="):
+                    summary_lines.append(line.strip())
+                elif line.startswith("URL:"):
+                    url_found = True
+            
+            summary = '\n'.join(summary_lines)
+            
+            summaries_data["modules"].append({
+                "module_number": i,
+                "title": title,
+                "url": url,
+                "summary": summary
+            })
+        
+        return summaries_data
+        
+    except Exception as e:
+        return {"error": f"Error parsing summaries file: {str(e)}"}
 
-    print("[TEST] Extracting first learning path...")
-    learning_paths = get_learning_paths(course_url, headless=True)
-    if not learning_paths:
-        print("❌ No learning paths found.")
-        exit()
+@app.route('/')
+def home():
+    return jsonify({
+        "message": "Microsoft Learn Course Scraper API",
+        "endpoints": {
+            "/summaries": "GET - Returns summaries from summaries.txt as JSON",
+            "/scrape": "POST - Scrapes a course and returns summaries",
+            "/health": "GET - Health check"
+        }
+    })
 
-    first_path = learning_paths[0]
-    print(f"[INFO] Selected Path: {first_path['title']}\n{first_path['url']}")
+@app.route('/health')
+def health():
+    return jsonify({"status": "healthy", "message": "API is running"})
 
-    print("[TEST] Getting first module...")
-    modules = get_inner_modules(first_path["url"], headless=True)
-    if not modules:
-        print("❌ No modules found in path.")
-        exit()
+@app.route('/summaries', methods=['GET'])
+def get_summaries():
+    """Return the contents of summaries.txt as JSON"""
+    summaries_data = parse_summaries_file("summaries.txt")
+    return jsonify(summaries_data)
 
-    first_module = modules[0]
-    print(f"[INFO] Selected Module: {first_module['title']}\n{first_module['url']}")
-
-    print("[TEST] Scraping content...")
-    title, content = scrape_module_content(first_module["url"], headless=True)
-
-    print("[TEST] Summarizing with Gemini...")
-    summary = summarize_with_gemini(content, CourseStructure)
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(f"Title: {title}\n\nContent:\n{content}\n")
-
-    with open(summary_path, "w", encoding="utf-8") as f:
-        f.write(f"Summary for: {first_module['title']}\n{summary}\n")
-
-    print(f"\n✅ Test finished.\nRaw content → {output_path}\nSummary → {summary_path}")
-
-"""
-if __name__ == "__main__":
-    course_url = "https://learn.microsoft.com/en-us/training/courses/mb-910t00"
-    output_path = "output.txt"
-    summary_path = "summaries.txt"
-
-    # Load example summary format from file
-    with open("CourseStructure.txt", "r", encoding="utf-8") as f:
-        CourseStructure = f.read()
-
-    print("[STEP 1] Extracting learning paths...")
-    learning_paths = get_learning_paths(course_url, headless=True)
-    print(f"[INFO] Found {len(learning_paths)} learning paths.")
-
-    with open(output_path, "w", encoding="utf-8") as f:
+@app.route('/scrape', methods=['POST'])
+def scrape_course():
+    """Scrape a Microsoft Learn course and return summaries as JSON"""
+    data = request.get_json()
+    
+    if not data or 'course_url' not in data:
+        return jsonify({"error": "Missing 'course_url' in request body"}), 400
+    
+    course_url = data['course_url']
+    
+    try:
+        # Load course structure
+        if not os.path.exists("CourseStructure.txt"):
+            return jsonify({"error": "CourseStructure.txt file not found"}), 500
+            
+        with open("CourseStructure.txt", "r", encoding="utf-8") as f:
+            CourseStructure = f.read()
+        
+        # Get learning paths
+        learning_paths = get_learning_paths(course_url, headless=True)
+        
+        if not learning_paths:
+            return jsonify({"error": "No learning paths found"}), 404
+        
+        all_summaries = {
+            "course_url": course_url,
+            "total_paths": len(learning_paths),
+            "learning_paths": []
+        }
+        
         for i, path in enumerate(learning_paths, 1):
-            f.write(f"=== Learning Path {i}: {path['title']} ===\nURL: {path['url']}\n\n")
-            print(f"[STEP 2] Getting modules in Path {i}: {path['title']}")
+            path_data = {
+                "path_number": i,
+                "title": path['title'],
+                "url": path['url'],
+                "modules": []
+            }
+            
+            # Get modules in this path
             modules = get_inner_modules(path["url"], headless=True)
-            f.write(f"Found {len(modules)} modules in this path.\n")
-
+            
             for j, mod in enumerate(modules, 1):
-                f.write(f"\n--- Module {j}: {mod['title']} ---\nURL: {mod['url']}\n")
-                print(f"[STEP 3] Scraping content for Module {j}: {mod['title']}")
+                # Scrape module content
                 title, content = scrape_module_content(mod['url'], headless=True)
-                f.write(f"Title: {title}\n\nContent:\n{content}\n")
-                f.write("=" * 80 + "\n")
-
-                # STEP 4: Summarize and write to summaries.txt
-                print(f"[STEP 4] Summarizing Module {j}: {mod['title']}")
+                
+                # Generate summary
                 summary = summarize_with_gemini(content, CourseStructure)
-                with open(summary_path, "a", encoding="utf-8") as summary_file:
-                    summary_file.write(f"=== Summary for Module {j}: {mod['title']} ===\n")
-                    summary_file.write(f"URL: {mod['url']}\n\n")
-                    summary_file.write(summary + "\n")
-                    summary_file.write("=" * 100 + "\n\n")
+                
+                module_data = {
+                    "module_number": j,
+                    "title": mod['title'],
+                    "url": mod['url'],
+                    "scraped_title": title,
+                    "summary": summary
+                }
+                
+                path_data["modules"].append(module_data)
+            
+            all_summaries["learning_paths"].append(path_data)
+        
+        return jsonify(all_summaries)
+        
+    except Exception as e:
+        return jsonify({"error": f"Error during scraping: {str(e)}"}), 500
 
-            f.write("\n" + "=" * 120 + "\n\n")
+@app.route('/scrape-single-module', methods=['POST'])
+def scrape_single_module():
+    """Scrape a single module and return its summary"""
+    data = request.get_json()
+    
+    if not data or 'module_url' not in data:
+        return jsonify({"error": "Missing 'module_url' in request body"}), 400
+    
+    module_url = data['module_url']
+    
+    try:
+        # Load course structure
+        if not os.path.exists("CourseStructure.txt"):
+            return jsonify({"error": "CourseStructure.txt file not found"}), 500
+            
+        with open("CourseStructure.txt", "r", encoding="utf-8") as f:
+            CourseStructure = f.read()
+        
+        # Scrape module content
+        title, content = scrape_module_content(module_url, headless=True)
+        
+        # Generate summary
+        summary = summarize_with_gemini(content, CourseStructure)
+        
+        return jsonify({
+            "module_url": module_url,
+            "title": title,
+            "summary": summary,
+            "content_length": len(content)
+        })
+        
+    except Exception as e:
+        return jsonify({"error": f"Error during scraping: {str(e)}"}), 500
 
-    print(f"\n[INFO] All scraping and summarization done.")
-    print(f"[INFO] Raw content saved to: {output_path}")
-    print(f"[INFO] Summaries saved to: {summary_path}")
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)
