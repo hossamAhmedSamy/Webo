@@ -5,11 +5,15 @@ from urllib.parse import urljoin
 import os
 import json
 import re
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
 
 # Configure Gemini
-genai.configure(api_key="AIzaSyDgORyXsBcfO5Y8QYZZ2rYmaKQ0JA6n6Bw")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 gemini_model = genai.GenerativeModel("gemini-2.0-flash")
 
 def summarize_with_gemini(content: str, CourseStructure: str) -> str:
